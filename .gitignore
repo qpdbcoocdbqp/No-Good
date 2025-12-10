@@ -1,0 +1,6 @@
+*.parquet
+*.pyc
+
+source/
+
+wkg.py
