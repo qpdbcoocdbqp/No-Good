@@ -34,14 +34,14 @@ From [remote-offline-store](https://github.com/feast-dev/feast/tree/master/examp
 
 * start server
 ```sh
-cd offline_server
+cd remote-offline-store/offline_server
 feast -c feature_repo apply
 feast -c feature_repo serve_offline
 ```
 
 * run client
 ```sh
-cd offline_client
+cd remote-offline-store/offline_client
 python test.py
 ```
 
@@ -49,3 +49,18 @@ python test.py
 ```sh
 feast -c feature_repo teardown
 ```
+
+### **Credit risk**
+
+```sh
+cd credit-risk-end-to-end
+uv pip install -r requirements.txt
+
+```
+Review
+
+- [x] `01_Credit_Risk_Data_Prep`
+- [x] `02_Deploying_the_Feature_Store`
+- [ ] `03_Credit_Risk_Model_Training`
+- [ ] `04_Credit_Risk_Model_Serving`
+- [ ] `05_Credit_Risk_Cleanup`
