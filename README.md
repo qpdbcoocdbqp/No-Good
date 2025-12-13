@@ -55,12 +55,18 @@ feast -c feature_repo teardown
 ```sh
 cd credit-risk-end-to-end
 uv pip install -r requirements.txt
-
 ```
-Review
 
 - [x] `01_Credit_Risk_Data_Prep`
 - [x] `02_Deploying_the_Feature_Store`
-- [ ] `03_Credit_Risk_Model_Training`
-- [ ] `04_Credit_Risk_Model_Serving`
-- [ ] `05_Credit_Risk_Cleanup`
+
+* skip `02_Deploying_the_Feature_Store` with
+
+    ```sh
+    feast -c Feature_Store serve_offline
+    feast -c Feature_Store serve
+    ```
+
+- [x] `03_Credit_Risk_Model_Training`
+- [x] `04_Credit_Risk_Model_Serving`
+- [x] `05_Credit_Risk_Cleanup`

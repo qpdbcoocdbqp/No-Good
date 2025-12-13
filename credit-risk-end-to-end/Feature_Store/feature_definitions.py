@@ -12,18 +12,14 @@ from feast import (
 from feast.types import Float32, String
 from feast.data_format import ParquetFormat
 
-CURRENT_DIR = os.path.abspath(os.curdir)
-
 # Data Sources
 # A data source tells Feast where the data lives
 data_a = FileSource(
     file_format=ParquetFormat(),
-    # path=Path(CURRENT_DIR,"data/data_a.parquet").as_uri()
     path="data/data_a.parquet"
 )
 data_b = FileSource(
     file_format=ParquetFormat(),
-    # path=Path(CURRENT_DIR,"data/data_b.parquet").as_uri()
     path="data/data_b.parquet"
 )
 
