@@ -52,6 +52,8 @@ feast -c feature_repo teardown
 
 ### **Credit risk**
 
+From [credit-risk-end-to-end](https://github.com/feast-dev/feast/tree/master/examples/credit-risk-end-to-end)
+
 ```sh
 cd credit-risk-end-to-end
 uv pip install -r requirements.txt
