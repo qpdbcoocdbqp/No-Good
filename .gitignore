@@ -1,6 +1,9 @@
 *.parquet
 *.pyc
+*.db
+
 
 source/
 
 wkg.py
+q.md
