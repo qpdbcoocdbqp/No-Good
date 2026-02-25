@@ -1,7 +1,9 @@
+.vscode
+
 *.parquet
 *.pyc
 *.db
-
+*.vortex
 
 source/
 
