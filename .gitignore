@@ -1,11 +1,17 @@
+# cache
 .vscode
 
+# file
 *.parquet
 *.pyc
 *.db
 *.vortex
+*.log
 
+# folder
 source/
+warehouse/
 
+# custom
 wkg.py
 q.md
