@@ -62,3 +62,55 @@
   * MinIO Console: `http://localhost:9001`
   * Default MinIO user / password: `minioadmin` / `minioadmin`
   * Make sure create bucket `iceberg-warehouse`
+
+## Lakekeeper (REST Catalog)
+
+[Lakekeeper](https://lakekeeper.io/) is an Apache-licensed Apache Iceberg REST Catalog.
+
+### 使用 Docker Compose 啟動 (推薦)
+
+由於 Lakekeeper 需要 PostgreSQL 作為資料庫，我們在 `docker-compose.yaml` 中配置了自動化的資料庫持久化和遷移：
+
+1. **啟動所有服務**:
+   ```sh
+   docker compose up -d
+   ```
+
+這會自動完成以下工作：
+*   **PostgreSQL**: 啟動並將資料持久化到 `./postgres_data` 子目錄。
+*   **Lakekeeper Migrate**: 自動檢測並執行資料庫遷移（Migration）。
+*   **Lakekeeper Setup**: 自動建立 Storage Profile 並初始化一個名為 `demo` 的 Warehouse。
+*   **Lakekeeper Server**: 啟動 REST Catalog 服務，網址為 `http://localhost:8181`。
+*   **MinIO**: 啟動 S3 API (`:9000`) 與控制台 (`:9001`)。
+
+*啟動後，請確保在 MinIO 中建立 `iceberg-warehouse` bucket。*
+
+### 手動使用 Docker 啟動 (若已有資料庫)
+
+如果您已經有運作中的 PostgreSQL：
+
+```sh
+docker run -d \
+  -p 8181:8181 \
+  -e "LAKEKEEPER__PG_DATABASE_URL_WRITE=postgres://[user]:[password]@[host]:5432/[db]" \
+  --name lakekeeper \
+  quay.io/lakekeeper/catalog:latest serve
+```
+
+### PyIceberg Configuration
+
+To connect `pyiceberg` to Lakekeeper:
+
+```python
+from pyiceberg.catalog import load_catalog
+
+catalog = load_catalog("lakekeeper", **{
+    "type": "rest",
+    "uri": "http://localhost:8181/catalog",
+    "warehouse": "demo",
+    "s3.endpoint": "http://localhost:9000",
+    "s3.access-key-id": "minioadmin",
+    "s3.secret-access-key": "minioadmin",
+    "s3.region": "us-east-1",
+})
+```

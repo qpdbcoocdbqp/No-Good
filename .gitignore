@@ -11,6 +11,8 @@
 # folder
 source/
 warehouse/
+postgres_data/
+minio_data/
 
 # custom
 wkg.py

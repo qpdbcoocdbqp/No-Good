@@ -2,17 +2,29 @@ from pyiceberg.catalog import load_catalog
 import pandas as pd
 import pyarrow as pa
 
-# 1. Load a local SQL catalog (using SQLite) but configure MinIO for S3 storage
+# 1. Load a catalog.
+# Option A: Local SQL catalog (using SQLite) but configure MinIO for S3 storage
 # Note: You need to install pyiceberg with s3fs support (e.g. `uv pip install "pyiceberg[pyarrow,pandas,s3fs]"`)
 # Ensure the bucket 'iceberg-warehouse' exists in your MinIO instance.
-catalog = load_catalog("minio_catalog", **{
-    "type": "sql",
-    "uri": "sqlite:///./iceberg_minio_catalog.db",
-    "warehouse": "s3://iceberg-warehouse",
+# catalog = load_catalog("minio_catalog", **{
+#     "type": "sql",
+#     "uri": "sqlite:///./iceberg_minio_catalog.db",
+#     "warehouse": "s3://iceberg-warehouse",
+#     "s3.endpoint": "http://localhost:9000",
+#     "s3.access-key-id": "minioadmin",        # Default MinIO credentials
+#     "s3.secret-access-key": "minioadmin",    # Default MinIO credentials
+#     "s3.region": "us-east-1",                # MinIO usually needs a default region
+# })
+
+# Option B: Lakekeeper REST catalog (requires a running Lakekeeper server)
+catalog = load_catalog("lakekeeper", **{
+    "type": "rest",
+    "uri": "http://localhost:8181/catalog",
+    "warehouse": "demo",
     "s3.endpoint": "http://localhost:9000",
-    "s3.access-key-id": "minioadmin",        # Default MinIO credentials
-    "s3.secret-access-key": "minioadmin",    # Default MinIO credentials
-    "s3.region": "us-east-1",                # MinIO usually needs a default region
+    "s3.access-key-id": "minioadmin",
+    "s3.secret-access-key": "minioadmin",
+    "s3.region": "us-east-1",
 })
 
 # 2. Create a namespace
