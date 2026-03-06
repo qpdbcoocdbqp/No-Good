@@ -1,6 +1,17 @@
 from pyiceberg.catalog import load_catalog
 import pandas as pd
 import pyarrow as pa
+import socket
+
+# Monkeypatch socket.getaddrinfo to resolve "minio" to 127.0.0.1
+# This is necessary because the Lakekeeper REST catalog returns properties
+# specifying "http://minio:9000" and overrides local catalog settings.
+_old_getaddrinfo = socket.getaddrinfo
+def _new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    if host == "minio":
+        host = "127.0.0.1"
+    return _old_getaddrinfo(host, port, family, type, proto, flags)
+socket.getaddrinfo = _new_getaddrinfo
 
 # 1. Load a catalog.
 # Option A: Local SQL catalog (using SQLite) but configure MinIO for S3 storage
@@ -20,12 +31,14 @@ import pyarrow as pa
 catalog = load_catalog("lakekeeper", **{
     "type": "rest",
     "uri": "http://localhost:8181/catalog",
-    "warehouse": "demo",
+    "warehouse": "whs",
     "s3.endpoint": "http://localhost:9000",
+    "client.s3.endpoint": "http://localhost:9000",
     "s3.access-key-id": "minioadmin",
     "s3.secret-access-key": "minioadmin",
     "s3.region": "us-east-1",
 })
+
 
 # 2. Create a namespace
 catalog.create_namespace_if_not_exists("default")
@@ -51,4 +64,10 @@ df["id"] = df["id"].astype("int32")
 table.append(pa.Table.from_pandas(df, schema=schema))
 
 # 6. Read and display data
+print(table.scan().to_pandas())
+
+# Append more data
+df2 = pd.DataFrame({"id": [5, 6, 7], "name": ["David", "Eve", "Frank"]})
+df2["id"] = df2["id"].astype("int32") 
+table.append(pa.Table.from_pandas(df2, schema=schema))
 print(table.scan().to_pandas())

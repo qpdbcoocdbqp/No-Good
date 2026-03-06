@@ -99,18 +99,49 @@ docker run -d \
 
 ### PyIceberg Configuration
 
-To connect `pyiceberg` to Lakekeeper:
+To connect `pyiceberg` to Lakekeeper, use the following configuration. 
+
+**Note on host resolution**: Since Lakekeeper may return the internal Docker hostname `minio` in storage properties, you might need to monkeypatch `socket.getaddrinfo` if you are running the script outside the Docker network.
 
 ```python
+import socket
 from pyiceberg.catalog import load_catalog
+
+# Monkeypatch socket.getaddrinfo to resolve "minio" to 127.0.0.1
+_old_getaddrinfo = socket.getaddrinfo
+def _new_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    if host == "minio":
+        host = "127.0.0.1"
+    return _old_getaddrinfo(host, port, family, type, proto, flags)
+socket.getaddrinfo = _new_getaddrinfo
 
 catalog = load_catalog("lakekeeper", **{
     "type": "rest",
     "uri": "http://localhost:8181/catalog",
-    "warehouse": "demo",
+    "warehouse": "whs",                      # Ensure this matches your warehouse name
     "s3.endpoint": "http://localhost:9000",
+    "client.s3.endpoint": "http://localhost:9000",
     "s3.access-key-id": "minioadmin",
     "s3.secret-access-key": "minioadmin",
     "s3.region": "us-east-1",
 })
 ```
+
+You can find the full working example in [example_pyiceberg_minio.py](../src/example_pyiceberg_minio.py).
+
+* **Expected Output**:
+
+  ```
+     id     name
+  0   1    Alice
+  1   2      Bob
+  2   3  Charlie
+
+     id     name
+  0   1    Alice
+  1   2      Bob
+  2   3  Charlie
+  3   5    David
+  4   6      Eve
+  5   7    Frank
+  ```
