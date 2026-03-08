@@ -1,0 +1,104 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lakekeeper-postgres
+    environment:
+      POSTGRES_USER: lakekeeper
+      POSTGRES_PASSWORD: lakekeeper
+      POSTGRES_DB: lakekeeper
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U lakekeeper" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: lakekeeper-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # This service runs the database migrations automatically before the server starts
+  lakekeeper-migrate:
+    image: quay.io/lakekeeper/catalog:latest
+    container_name: lakekeeper-migrate
+    command: migrate
+    environment:
+      - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgres://lakekeeper:lakekeeper@postgres:5432/lakekeeper
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # This service initializes the Lakekeeper storage profile and warehouse
+  lakekeeper-setup:
+    image: curlimages/curl:latest
+    container_name: lakekeeper-setup
+    depends_on:
+      lakekeeper:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Wait for Lakekeeper to be ready
+        until curl -s http://lakekeeper-server:8181/health; do
+          echo "Waiting for Lakekeeper..."
+          sleep 2
+        done
+        echo "Lakekeeper is ready. Creating Storage Profile..."
+        curl -X POST http://lakekeeper-server:8181/management/v1/storage-profile \
+             -H "Content-Type: application/json" \
+             -d '{
+               "name": "minio-profile",
+               "storage_type": "s3",
+               "endpoint": "http://minio:9000",
+               "region": "us-east-1",
+               "access_key_id": "minioadmin",
+               "secret_access_key": "minioadmin",
+               "allow_http": true
+             }'
+        echo "Creating Warehouse..."
+        curl -X POST http://lakekeeper-server:8181/management/v1/warehouse \
+             -H "Content-Type: application/json" \
+             -d '{
+               "name": "whs",
+               "storage_profile": "minio-profile",
+               "storage_location": "s3://iceberg-warehouse"
+             }'
+        echo "Setup complete."
+
+  lakekeeper:
+    image: quay.io/lakekeeper/catalog:latest
+    container_name: lakekeeper-server
+    command: serve
+    ports:
+      - "8181:8181"
+    environment:
+      - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgres://lakekeeper:lakekeeper@postgres:5432/lakekeeper
+      - LAKEKEEPER__S3_ENDPOINT=http://minio:9000
+      - LAKEKEEPER__S3_ACCESS_KEY_ID=minioadmin
+      - LAKEKEEPER__S3_SECRET_ACCESS_KEY=minioadmin
+      - LAKEKEEPER__S3_REGION=us-east-1
+      - LAKEKEEPER__S3_ALLOW_HTTP=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      lakekeeper-migrate:
+        condition: service_completed_successfully
