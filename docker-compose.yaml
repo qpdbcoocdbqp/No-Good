@@ -76,7 +76,7 @@ services:
         curl -X POST http://lakekeeper-server:8181/management/v1/warehouse \
              -H "Content-Type: application/json" \
              -d '{
-               "name": "demo",
+               "name": "whs",
                "storage_profile": "minio-profile",
                "storage_location": "s3://iceberg-warehouse"
              }'

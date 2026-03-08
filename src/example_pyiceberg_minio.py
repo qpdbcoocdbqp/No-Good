@@ -70,4 +70,20 @@ print(table.scan().to_pandas())
 df2 = pd.DataFrame({"id": [5, 6, 7], "name": ["David", "Eve", "Frank"]})
 df2["id"] = df2["id"].astype("int32") 
 table.append(pa.Table.from_pandas(df2, schema=schema))
+print("\nAfter Append:")
 print(table.scan().to_pandas())
+
+# 7. Update data (Overwrite specific rows by replacing them)
+# For example, let's update id=5's name from "David" to "David (Updated)"
+df_update = pd.DataFrame({"id": [5], "name": ["David (Updated)"]})
+df_update["id"] = df_update["id"].astype("int32") 
+table.overwrite(pa.Table.from_pandas(df_update, schema=schema), overwrite_filter="id == 5")
+print("\nAfter Update (Overwrite id == 5):")
+print(table.scan().to_pandas())
+
+# 8. Delete data (Row-level delete based on boolean expression)
+# For example, let's delete id=6
+table.delete(delete_filter="id == 6")
+print("\nAfter Delete (id == 6):")
+print(table.scan().to_pandas())
+

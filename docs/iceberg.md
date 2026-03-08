@@ -67,27 +67,28 @@
 
 [Lakekeeper](https://lakekeeper.io/) is an Apache-licensed Apache Iceberg REST Catalog.
 
-### 使用 Docker Compose 啟動 (推薦)
+### Using Docker Compose (Recommended)
 
-由於 Lakekeeper 需要 PostgreSQL 作為資料庫，我們在 `docker-compose.yaml` 中配置了自動化的資料庫持久化和遷移：
+Since Lakekeeper requires PostgreSQL as a database, we have configured automated database persistence and migrations in `docker-compose.yaml`:
 
-1. **啟動所有服務**:
+1. **Start all services**:
    ```sh
    docker compose up -d
    ```
 
-這會自動完成以下工作：
-*   **PostgreSQL**: 啟動並將資料持久化到 `./postgres_data` 子目錄。
-*   **Lakekeeper Migrate**: 自動檢測並執行資料庫遷移（Migration）。
-*   **Lakekeeper Setup**: 自動建立 Storage Profile 並初始化一個名為 `demo` 的 Warehouse。
-*   **Lakekeeper Server**: 啟動 REST Catalog 服務，網址為 `http://localhost:8181`。
-*   **MinIO**: 啟動 S3 API (`:9000`) 與控制台 (`:9001`)。
+This will automatically perform the following:
+*   **PostgreSQL**: Starts and persists data to the `./postgres_data` subdirectory.
+*   **Lakekeeper Migrate**: Automatically detects and executes database migrations.
+*   **Lakekeeper Setup**: Automatically creates a Storage Profile and initializes a warehouse named `whs`.
+*   **Lakekeeper Server**: Starts the REST Catalog service at `http://localhost:8181`.
+*   **MinIO**: Starts the S3 API (`:9000`) and Console (`:9001`).
 
-*啟動後，請確保在 MinIO 中建立 `iceberg-warehouse` bucket。*
+*After starting, ensure you create the `iceberg-warehouse` bucket in MinIO.*
 
-### 手動使用 Docker 啟動 (若已有資料庫)
+### Manual Docker Setup (If database already exists)
 
-如果您已經有運作中的 PostgreSQL：
+If you already have a running PostgreSQL instance:
+
 
 ```sh
 docker run -d \
@@ -131,12 +132,13 @@ You can find the full working example in [example_pyiceberg_minio.py](../src/exa
 
 * **Expected Output**:
 
-  ```
+  ```text
      id     name
   0   1    Alice
   1   2      Bob
   2   3  Charlie
-
+  
+  After Append:
      id     name
   0   1    Alice
   1   2      Bob
@@ -144,4 +146,45 @@ You can find the full working example in [example_pyiceberg_minio.py](../src/exa
   3   5    David
   4   6      Eve
   5   7    Frank
+  
+  After Update (Overwrite id == 5):
+     id             name
+  0   1            Alice
+  1   2              Bob
+  2   3          Charlie
+  3   6              Eve
+  4   7            Frank
+  5   5  David (Updated)
+  
+  After Delete (id == 6):
+     id             name
+  0   1            Alice
+  1   2              Bob
+  2   3          Charlie
+  3   7            Frank
+  4   5  David (Updated)
   ```
+
+### Data Manipulation: Update and Delete
+
+With recent versions of PyIceberg (using PyArrow), manipulating row-level data is supported. Lakekeeper (REST Catalog) perfectly handles these metadata updates.
+
+* **Update**
+  Use `overwrite()` paired with an `overwrite_filter` to apply modifications. This performs a row-level update on elements that match the filter.
+  
+  ```python
+  # Update id=5's name from "David" to "David (Updated)"
+  df_update = pd.DataFrame({"id": [5], "name": ["David (Updated)"]})
+  df_update["id"] = df_update["id"].astype("int32") 
+  table.overwrite(pa.Table.from_pandas(df_update, schema=schema), overwrite_filter="id == 5")
+  ```
+
+* **Delete**
+  Use `delete()` with a `delete_filter` to permanently remove rows based on specific conditions. PyIceberg leverages expressions to handle conditional deletions correctly.
+
+  ```python
+  # Row-level delete based on boolean expression
+  table.delete(delete_filter="id == 6")
+  ```
+
+You can view the full script implementation inside [`src/example_pyiceberg_minio.py`](../src/example_pyiceberg_minio.py).
