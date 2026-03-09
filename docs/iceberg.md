@@ -187,4 +187,30 @@ With recent versions of PyIceberg (using PyArrow), manipulating row-level data i
   table.delete(delete_filter="id == 6")
   ```
 
+### Table Metadata Version Control & Time Traveling
+
+Iceberg maintains a linear history of table states (snapshots), enabling you to track changes and query historical data.
+
+* **Table Metadata Version Control (History)**
+  You can inspect all historical snapshots on the table:
+
+  ```python
+  print("\n--- Table Metadata Version Control (History) ---")
+  for history in table.history():
+      print(f"Snapshot ID: {history.snapshot_id}, Timestamp: {history.timestamp_ms}")
+  ```
+
+* **Time Traveling**
+  To query the table precisely as it appeared at a past moment, pass the `snapshot_id` to `.scan()`:
+
+  ```python
+  if len(table.history()) >= 2:
+      # Retrieve the snapshot prior to the most recent operation
+      previous_snapshot_id = table.history()[-2].snapshot_id
+      
+      print(f"\n--- Time Traveling to previous Snapshot ---")
+      df_previous = table.scan(snapshot_id=previous_snapshot_id).to_pandas()
+      print(df_previous)
+  ```
+
 You can view the full script implementation inside [`src/example_pyiceberg_minio.py`](../src/example_pyiceberg_minio.py).

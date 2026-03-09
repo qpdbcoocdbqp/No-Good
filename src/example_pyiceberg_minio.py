@@ -87,3 +87,15 @@ table.delete(delete_filter="id == 6")
 print("\nAfter Delete (id == 6):")
 print(table.scan().to_pandas())
 
+# 9. Table Metadata Version Control (History)
+print("\n--- Table Metadata Version Control (History) ---")
+for history in table.history():
+    print(f"Snapshot ID: {history.snapshot_id}, Timestamp: {history.timestamp_ms}")
+
+# 10. Time Traveling
+# Let's time travel to the snapshot just before the delete operation (which is the previous one if len >= 2)
+if len(table.history()) >= 2:
+    previous_snapshot_id = table.history()[-2].snapshot_id
+    print(f"\n--- Time Traveling to previous Snapshot (before delete) ---")
+    df_previous = table.scan(snapshot_id=previous_snapshot_id).to_pandas()
+    print(df_previous)
