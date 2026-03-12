@@ -3,9 +3,10 @@
 **Reference**
 
 * [celery/celery](https://github.com/celery/celery)
-* [rq](https://github.com/rq/rq)
+* [rq/rq](https://github.com/rq/rq)
+* [RabbitMQ](https://github.com/rabbitmq/rabbitmq-website)
 
-## Usage Example
+## Celery Usage Example
 
 Refer to [example.py](example.py) for a basic setup using Redis.
 
@@ -50,9 +51,45 @@ Use Docker Compose (Redis, Celery Worker, RQ Worker).
    docker-compose exec app python rq_example.py
    ```
 
-4. **Show logs**:
+4. **Run RabbitMQ example**:
+   ```bash
+   # In terminal 1 (Consumer)
+   docker-compose exec app python rabbitmq_example.py consumer
+   
+   # In terminal 2 (Producer)
+   docker-compose exec app python rabbitmq_example.py producer "Hello Rabbit!"
+   ```
+
+5. **Show logs**:
    * **Celery**: `docker-compose logs -f worker`
    * **RQ**: `docker-compose logs -f rq-worker`
+   * **RabbitMQ**: `docker-compose logs -f rabbitmq`
+
+## RabbitMQ Usage Example
+
+Refer to [rabbitmq_example.py](rabbitmq_example.py) for a basic setup using the `pika` library.
+
+### Steps to Run
+
+1. **Install dependencies**:
+   ```bash
+   uv pip install pika
+   ```
+
+2. **Start RabbitMQ** (using Docker):
+   ```bash
+   docker run -d -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+   ```
+
+3. **Run the Consumer**:
+   ```bash
+   python rabbitmq_example.py consumer
+   ```
+
+4. **Trigger the Producer**:
+   ```bash
+   python rabbitmq_example.py producer "Message via RabbitMQ"
+   ```
 
 
 ## RQ Usage Example

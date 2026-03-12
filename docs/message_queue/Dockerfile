@@ -3,6 +3,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir celery redis rq
-COPY example.py rq_example.py tasks.py ./
+RUN pip install --no-cache-dir celery redis rq pika
+COPY example.py rq_example.py tasks.py rabbitmq_example.py ./
 CMD ["celery", "-A", "example", "worker", "--loglevel=info"]

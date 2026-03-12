@@ -4,6 +4,12 @@ services:
     ports:
       - "6379:6379"
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   worker:
     build: .
     environment:
@@ -24,6 +30,8 @@ services:
     build: .
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_HOST=rabbitmq
     depends_on:
       - redis
+      - rabbitmq
     command: tail -f /dev/null
